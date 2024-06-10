@@ -10,7 +10,7 @@ app.use(express.json())
 app.use(cors());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ozyesnk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
@@ -45,6 +45,32 @@ async function run() {
             const assignment = req.body;
             const result = await usersCollection.insertOne(assignment)
             res.send(result);
+        })
+
+
+        //admin role
+        app.patch('/users/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            let admin = false
+            if (user) {
+                admin = user?.role === 'admin'
+            }
+            res.send({ admin })
         })
 
 
