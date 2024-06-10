@@ -47,6 +47,18 @@ async function run() {
             res.send(result);
         })
 
+        //Collectuser
+
+        app.get('/collectUser/:email' , async (req, res) => {
+            const email = req.params.email
+            const query = {email:email}
+
+            const result = await usersCollection.findOne(query)
+            res.send(result);
+        })
+
+
+
 
         //admin role
         app.patch('/users/:id', async (req, res) => {
@@ -75,6 +87,7 @@ async function run() {
         //agent role
         app.patch('/agents/:id', async (req, res) => {
             const id = req.params.id
+            console.log(id)
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
                 $set: {
@@ -84,8 +97,9 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updatedDoc)
             res.send(result)
         })
-        app.get('/users/:email', async (req, res) => {
-            const email = req.params.email
+        app.get('/agents', async (req, res) => {
+            const email = req.query.email
+            // console.log(email)
             const query = { email: email }
             const user = await usersCollection.findOne(query)
             let agent = false
