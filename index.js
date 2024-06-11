@@ -117,6 +117,17 @@ async function run() {
             res.send(result)
         })
 
+        //my added property api by email
+        app.get('/properties', async(req,res) => {
+            const email = req.query.email
+            console.log(email)
+            const query = { agentEmail: email }
+            const result = await propertiesCollection.find(query).toArray()
+            res.send(result)
+
+
+        })
+
 
 
 
