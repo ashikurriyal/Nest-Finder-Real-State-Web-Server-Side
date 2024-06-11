@@ -33,6 +33,7 @@ async function run() {
 
         //Collections
         const usersCollection = client.db('NestFinderDB').collection('users')
+        const propertiesCollection = client.db('NestFinderDB').collection('properties')
 
 
         //users
@@ -109,7 +110,12 @@ async function run() {
             res.send({ agent })
         })
 
-
+        //add property from agent
+        app.post('/properties', async(req, res) => {
+            const property = req.body;
+            const result = await propertiesCollection.insertOne(property)
+            res.send(result)
+        })
 
 
 
