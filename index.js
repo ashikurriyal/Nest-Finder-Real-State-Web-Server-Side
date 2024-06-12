@@ -50,9 +50,9 @@ async function run() {
 
         //Collectuser
 
-        app.get('/collectUser/:email' , async (req, res) => {
+        app.get('/collectUser/:email', async (req, res) => {
             const email = req.params.email
-            const query = {email:email}
+            const query = { email: email }
 
             const result = await usersCollection.findOne(query)
             res.send(result);
@@ -111,14 +111,14 @@ async function run() {
         })
 
         //add property from agent
-        app.post('/properties', async(req, res) => {
+        app.post('/properties', async (req, res) => {
             const property = req.body;
             const result = await propertiesCollection.insertOne(property)
             res.send(result)
         })
 
         //my added property api by email
-        app.get('/properties', async(req,res) => {
+        app.get('/properties', async (req, res) => {
             const email = req.query.email
             console.log(email)
             const query = { agentEmail: email }
@@ -129,10 +129,26 @@ async function run() {
         })
 
         //manage properties for admin from properties, where load all properties
-        app.get('/allProperties', async(req, res) => {
+        app.get('/allProperties', async (req, res) => {
             const result = await propertiesCollection.find().toArray()
             res.send(result)
         })
+
+
+
+        //verify or reject property
+        app.patch('/properties/:id', async (req, res) => {
+            const id = req.params.id;
+            const { status } = req.body; // Get the status from the request body
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    status: status // Update the status based on the request body
+                }
+            };
+            const result = await propertiesCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+        });
 
 
 
