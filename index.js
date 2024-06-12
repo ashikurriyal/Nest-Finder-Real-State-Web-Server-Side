@@ -150,6 +150,14 @@ async function run() {
             res.send(result);
         });
 
+        // Get all verified properties
+        app.get('/verifiedProperties', async (req, res) => {
+            const filter = { status: 'verified' };
+            const properties = await propertiesCollection.find(filter).toArray();
+            res.send(properties);
+        });
+
+
 
 
 
