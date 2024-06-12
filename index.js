@@ -128,6 +128,12 @@ async function run() {
 
         })
 
+        //manage properties for admin from properties, where load all properties
+        app.get('/allProperties', async(req, res) => {
+            const result = await propertiesCollection.find().toArray()
+            res.send(result)
+        })
+
 
 
 
