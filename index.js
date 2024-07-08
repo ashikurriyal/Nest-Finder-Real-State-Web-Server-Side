@@ -7,7 +7,13 @@ const port = process.env.PORT || 5300;
 
 
 app.use(express.json())
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'https://nestfinder-ce7a3.web.app',
+        'https://nestfinder-ce7a3.firebaseapp.com'
+    ]
+}));
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -34,6 +40,10 @@ async function run() {
         //Collections
         const usersCollection = client.db('NestFinderDB').collection('users')
         const propertiesCollection = client.db('NestFinderDB').collection('properties')
+        const wishlistCollection = client.db('NestFinderDB').collection('wishlist')
+        const requestedCollection = client.db('NestFinderDB').collection('requested')
+        const reviewsCollection = client.db('NestFinderDB').collection('reviews')
+
 
 
         //users
@@ -124,8 +134,6 @@ async function run() {
             const query = { agentEmail: email }
             const result = await propertiesCollection.find(query).toArray()
             res.send(result)
-
-
         })
 
         //manage properties for admin from properties, where load all properties
@@ -156,6 +164,169 @@ async function run() {
             const properties = await propertiesCollection.find(filter).toArray();
             res.send(properties);
         });
+
+        app.get('/propertyDetails/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await propertiesCollection.findOne(query);
+            res.send(result)
+        })
+
+
+        //wishlist 
+        app.post('/wishlist', async (req, res) => {
+            const wishlist = req.body;
+            const result = await wishlistCollection.insertOne(wishlist)
+            res.send(result)
+        })
+
+        //get wishlist api by email
+        app.get('/wishlist', async (req, res) => {
+            const email = req.query.email
+            // console.log(email)
+            const query = { email: email }
+            const result = await wishlistCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        //make offer get
+        app.get('/wishlist/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await wishlistCollection.findOne(query)
+            res.send(result)
+        })
+
+        //make offer post 
+        /* app.post('/requested', async (req, res) => {
+            const requested = req.body;
+            const query = {propertyId: requested?.propertyId}
+            // console.log(query)
+            const exist = await requestedCollection.findOne(query)
+            if(exist){
+                return res.send({message: 'Your previous offer is already pending', insertedId:null})
+            }
+            const result = await requestedCollection.insertOne(requested)
+            res.send(result)
+        }) */
+
+        app.post('/requested', async (req, res) => {
+            const requested = req.body;
+            const result = await requestedCollection.insertOne(requested)
+            res.send(result)
+        })
+
+        //get property bought for user by email
+        app.get('/requested/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { buyerEmail: email }
+
+            const result = await requestedCollection.find(query).toArray()
+            res.send(result);
+        })
+
+        //manage requested properties for agent from requested, where load all requested properties
+        app.get('/allRequestedProperties', async (req, res) => {
+            const result = await requestedCollection.find().toArray()
+            res.send(result)
+        })
+
+        //verify or Reject request property
+        app.patch('/requested/:id', async (req, res) => {
+            const id = req.params.id;
+            const { offerStatus } = req.body; // Get the status from the request body
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    offerStatus: offerStatus // Update the status based on the request body
+                }
+            };
+            const result = await requestedCollection.updateOne(filter, updatedDoc);
+
+            if (offerStatus === 'accepted') {
+                const offer = await requestedCollection.findOne(filter);
+                const propertyId = offer.propertyId;
+
+                // Reject other offers for the same property
+                const rejectFilter = {
+                    propertyId: propertyId,
+                    _id: { $ne: new ObjectId(id) }
+                };
+                const rejectDoc = {
+                    $set: {
+                        offerStatus: 'rejected'
+                    }
+                };
+                await requestedCollection.updateMany(rejectFilter, rejectDoc);
+            }
+            res.send(result);
+        });
+
+        //review get
+        app.get('/propertyReview/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await propertiesCollection.findOne(query);
+            res.send(result)
+        })
+
+        //reviews post
+        app.post('/reviews', async (req, res) => {
+            const reviews = req.body;
+            const result = await reviewsCollection.insertOne(reviews)
+            res.send(result)
+        })
+
+        //get reviews
+        app.get('/allReviews', async (req, res) => {
+            const result = await reviewsCollection.find().toArray()
+            res.send(result)
+        })
+
+        //delete review
+        app.delete('/reviews/:id', async (req, res) => {
+            const id = req.params.id;
+            try {
+                const result = await reviewsCollection.deleteOne({ _id: new ObjectId(id) });
+                if (result.deletedCount === 1) {
+                    res.status(200).send({ message: 'Review deleted successfully' });
+                } else {
+                    res.status(404).send({ message: 'Review not found' });
+                }
+            } catch (error) {
+                res.status(500).send({ message: 'An error occurred', error });
+            }
+        });
+
+        app.get('/getReviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { propertyId: id }
+            const result = await reviewsCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        //reviews by email for user
+        app.get('/myReviews', async (req, res) => {
+            const email = req.query.email
+            const query = { userEmail: email }
+            const result = await reviewsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.delete('/myReviews/:id', async (req, res) => {
+            const id = req.params.id;
+            try {
+                const result = await reviewsCollection.deleteOne({ _id: new ObjectId(id) });
+                if (result.deletedCount === 1) {
+                    res.status(200).send({ message: 'Review deleted successfully' });
+                } else {
+                    res.status(404).send({ message: 'Review not found' });
+                }
+            } catch (error) {
+                res.status(500).send({ message: 'An error occurred', error });
+            }
+        });
+        
 
 
 
